@@ -8,13 +8,20 @@
     "vscode": "^1.22.0"
   },
   "categories": ["Other"],
-  "activationEvents": ["*"],
+  "activationEvents": [
+    "onCommand:extension.jump",
+    "onCommand:extension.jump-exit"
+  ],
   "main": "./out/extension",
   "contributes": {
     "commands": [
       {
         "command": "extension.jump",
         "title": "jump"
+      },
+      {
+        "command": "extension.jump-exit",
+        "title": "jump-exit"
       }
     ]
   },
