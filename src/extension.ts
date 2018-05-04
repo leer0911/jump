@@ -19,23 +19,22 @@ import {
 } from './utils';
 
 export function activate(context: ExtensionContext) {
-  // 跳转正则匹配规则
-  const defaultRexgexp = '\\w{2,}';
-  // 跳转位置
-  let positions: JumpPosition[] = null;
-  let firstKeyOfCode: string = null;
-
-  // 是否为jump模式
-  let isJumpMode: boolean = false;
-  const codeArray = createCodeArray();
-  createDataUriCaches(codeArray);
+  const defaultRexgexp = '\\w{2,}'; // 跳转正则匹配规则
+  let positions: JumpPosition[] = null; // 跳转位置
+  let firstKeyOfCode: string = null; // 记录jump下输入的第一个字符
+  let isJumpMode: boolean = false; // jump模式
+  const codeArray = createCodeArray(); // 生成 [aa,ab,ac....] 的数组
+  createDataUriCaches(codeArray); // 创建 jump UI
   const decorationType = window.createTextEditorDecorationType({});
 
   setJumpMode(false);
 
+  // jump 命令
   const jumpDisposable = commands.registerCommand('extension.jump', () => {
     runJump(new RegExp(defaultRexgexp, 'g'));
   });
+
+  // jump模式下 输入命令
   const jumpTypeDisposable = commands.registerCommand('type', args => {
     if (!isJumpMode) {
       commands.executeCommand('default:type', args);
@@ -56,14 +55,14 @@ export function activate(context: ExtensionContext) {
     }
     const code = firstKeyOfCode + text;
     const position = positions[getCodeIndex(code.toLowerCase())];
-
+    const { line, character } = position;
     editor.setDecorations(decorationType, []);
 
     window.activeTextEditor.selection = new Selection(
-      position.line,
-      position.character,
-      position.line,
-      position.character
+      line,
+      character,
+      line,
+      character
     );
 
     const reviewType: TextEditorRevealType = TextEditorRevealType.Default;
@@ -75,6 +74,7 @@ export function activate(context: ExtensionContext) {
     setJumpMode(false);
   });
 
+  // jump 退出命令
   const exitJumpyModeDisposable = commands.registerCommand(
     'extension.jump-exit',
     () => {
