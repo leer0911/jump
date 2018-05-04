@@ -1,29 +1,45 @@
 'use strict';
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import { commands, window, ExtensionContext, TextEditor } from 'vscode';
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+import {
+  createCodeArray,
+  getLines,
+  getPosition,
+  JumpPosition,
+  createDecorationOptions,
+  createDataUriCaches
+} from './utils';
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "jump" is now active!');
+export function activate(context: ExtensionContext) {
+  const defaultRexgexp = '\\w{2,}';
+  let positions: JumpPosition[] = null;
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', () => {
-        // The code you place here will be executed every time your command is executed
+  const codeArray = createCodeArray();
+  createDataUriCaches(codeArray);
 
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
-    });
+  function runJump(regexp: RegExp) {
+    const editor = window.activeTextEditor;
+    const linesInfo = getLines(editor);
+    const { firstLineNumber, lines } = linesInfo;
+    const { length: maxDecorations } = codeArray;
+    positions = getPosition(maxDecorations, firstLineNumber, lines, regexp);
 
-    context.subscriptions.push(disposable);
-}
+    const decorationType = window.createTextEditorDecorationType({});
+    const decorations = positions
+      .map((position, i) => {
+        const { line, character: start } = position;
+        const end = start + 2;
+        const code = codeArray[i];
+        return createDecorationOptions(line, start, end, code);
+      })
+      .filter(x => !!x);
 
-// this method is called when your extension is deactivated
-export function deactivate() {
+    // 设置跳转 UI
+    editor.setDecorations(decorationType, decorations);
+  }
+  const jumpDisposable = commands.registerCommand('extension.jump', () => {
+    runJump(new RegExp(defaultRexgexp, 'g'));
+  });
+
+  context.subscriptions.push(jumpDisposable);
 }
